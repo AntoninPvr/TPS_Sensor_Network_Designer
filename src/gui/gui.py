@@ -66,7 +66,7 @@ class GUI(customtkinter.CTk):
 
         # Elements
         #================================
-        self.__pannel_element = PannelElement(master=self, app=self.app)
+        self.__pannel_element = PannelElement(self, self.app)
         self.__pannel_element.grid(row=0, column=1, rowspan=2, sticky="senw", padx=2)
 
 
@@ -111,14 +111,20 @@ class AppGUIInterface:
     
     def create_app_element(self) -> Element:
         return self.app.create_element()
+    
+    # Removers
+    #================================
+    def remove_app_element(self, element: Element):
+        self.app.remove_element(element)
 
 #================================================================================================
 # PannelElement Classes
 #================================================================================================
 
-class PannelElement(AppGUIInterface, customtkinter.CTkFrame):
-    def __init__(self, master, app: App=None):
-        super().__init__(app=app, master=master)
+class PannelElement(customtkinter.CTkFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None,):
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
         # Attributes
         #================================
 
@@ -141,8 +147,9 @@ class PannelElement(AppGUIInterface, customtkinter.CTkFrame):
     #================================
 
 class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
-    def __init__(self, master, app: App=None, **kwargs):
-        super().__init__(master, app, **kwargs)
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
         # Configure windows
         #================================
         self.grid_columnconfigure(0, weight=0)
@@ -171,11 +178,12 @@ class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
 
 class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface):
     def __init__(self, master, app: App=None, **kwargs):
-        super().__init__(master, app, **kwargs)
+        customtkinter.CTkScrollableFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
         # Attributes
         #================================
-        self.__elt_list = self.b_get_list_elements()
-        self.__elt_frames = []
+        self.__elt_list = self.get_app_list_elements()
+        self.__elt_frames: list[FrameElement] = []
         self.__PADX = 2
         self.__PADY = 2
 
@@ -185,25 +193,39 @@ class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface)
 
         # Add elements
         #================================
-        for elt in self.__elt_list:
-            self.add_element(elt)
+        self.update_scollable_elements()
 
     # Methods
     #================================
-    def add_element(self, index: int=None):
-        elt_frame = FrameElement(self, self.app, index=index)
-        elt_frame.grid(row=len(self.__elt_frames), column=0, padx=self.PADX, pady=self.PADY, sticky="nsew")
-        self.__elt_frames.append(__elt_frame)
-        
+    def add_hidden_element(self):
+        for elt in self.__elt_list:
+            if elt.get_name() not in [frame.get_name() for frame in self.__elt_frames]:
+                elt_frame = FrameElement(self, self.app, elt_name=elt.get_name())
+                elt_frame.grid(row=len(self.__elt_frames), column=0, padx=self.__PADX, pady=self.__PADY, sticky="nsew")
+                self.__elt_frames.append(elt_frame)
+            
+    def remove_obsolete_element(self):
+        for frame in self.__elt_frames:
+            if frame.get_name() not in [elt.get_name() for elt in self.__elt_list]:
+                frame.destroy()
+                self.__elt_frames.remove(frame)
+
+    def update_scollable_elements(self):
+        self.remove_obsolete_element()
+        self.add_hidden_element()
+
 class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
-    def __init__(self, master, app: App=None, index: int=None, **kwargs):
-        if index is None:
+    def __init__(self, master, app: App=None, elt_name: int=None, **kwargs):
+        if elt_name is None:
             raise ValueError("Index must be provided")
-        super().__init__(master, app, border_width=1, **kwargs)
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
+
         # Attributes
         #================================
-        self.__index = index
-        self.__element = self.b_get_element(self.__index)
+        self.__elt_name = elt_name
+        self.__element = self.get_app_element(self.__elt_name)
+        self.__master = master
         PADX = 2
         PADY = 2
 
@@ -221,16 +243,18 @@ class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
 
         # Element name
         #================================
-        self.__name = customtkinter.CTkLabel(self.header, text=__element.get_name())
+        self.__name = customtkinter.CTkLabel(self.__header, text=self.__element.get_name())
         self.__name.grid(row=0, column=0, padx=10, sticky="w")
 
         # Delete button
         #================================
         def __delete_item():
-            logging.debug(f"Deleting {__element.get_name()}")
+            logging.debug(f"Deleting {self.__element.get_name()}")
             self.destroy()
-            master.elt_frames.remove(self)
-        self.__destroy_button = customtkinter.CTkButton(self.header,
+            self.remove_app_element(self.__element)
+            self.__master.update_scollable_elements()
+        
+        self.__destroy_button = customtkinter.CTkButton(self.__header,
                                                       text="X",
                                                       width=30,
                                                       fg_color=RED,
@@ -241,7 +265,7 @@ class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
 
         # Description
         #================================
-        self.__lbl_description = customtkinter.CTkLabel(self, text=__element.get_description())
+        self.__lbl_description = customtkinter.CTkLabel(self, text=self.__element.get_description())
         self.__lbl_description.grid(row=1, column=0, padx=10)
 
         # Power states sub frame
@@ -253,35 +277,43 @@ class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
         # Power state
         self.__power_states = []
         self.__power_states.append(FramePowerState(self.__power_state_frame,
-                                           power_state=__element.get_power_state("Wake"),
+                                           power_state=self.__element.get_power_state("Wake"),
                                            name="Wake",
                                            color=WAKE_COLOR)
                                            )
         self.__power_states[0].grid(row=0, column=0, padx=PADX, pady=PADY, sticky="ne")
         self.__power_states.append(FramePowerState(self.__power_state_frame,
-                                            power_state=__element.get_power_state("Active"),
+                                            power_state=self.__element.get_power_state("Active"),
                                             name="Active",
                                             color=ACTIVE_COLOR)
                                             )
         self.__power_states[1].grid(row=0, column=1, padx=PADX, pady=PADY, sticky="nw")
         self.__power_states.append(FramePowerState(self.__power_state_frame,
-                                            power_state=__element.get_power_state("Fall"),
+                                            power_state=self.__element.get_power_state("Fall"),
                                             name="Fall",
                                             color=IDLE_COLOR)
                                             )
         self.__power_states[2].grid(row=1, column=0, padx=PADX, pady=PADY, sticky="se")
         self.__power_states.append(FramePowerState(self.__power_state_frame,
-                                            power_state=__element.get_power_state("Sleep"),
+                                            power_state=self.__element.get_power_state("Sleep"),
                                             name="Sleep",
                                             color=SLEEP_COLOR)
                                             )
         self.__power_states[3].grid(row=1, column=1, padx=PADX, pady=PADY, sticky="sw")
 
+    # Methods
+    #================================
+    
+    # Getters
+    #================================
+    def get_name(self) -> str:
+        return self.__element.get_name()
+
 class FramePowerState(customtkinter.CTkFrame):
     def __init__(self, master, power_state: PowerState=None, color="white", name: str="", **kwargs):
         if power_state is None:
             raise ValueError("Power state must be provided")
-        super().__init__(master, border_width=1, **kwargs)
+        customtkinter.CTkFrame.__init__(self, master, border_width=1)
         # Attributes
         #===========================================================================
         self.power_state = power_state
@@ -350,3 +382,128 @@ class FramePowerState(customtkinter.CTkFrame):
         else:
             self.power_state.set_time(0)
 
+class CreateElement(customtkinter.CTkToplevel, AppGUIInterface):
+    def __init__(self, master, app: App=None, **kwargs):
+        customtkinter.CTkToplevel.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #===========================================================================
+        self.element = self.create_app_element()
+
+        # configure windows
+        #===========================================================================
+        self.grab_set()
+        self.title("Create new element")
+        self.geometry("350x350")
+
+        # Create element frame
+        #===========================================================================
+        self.frame_create_element_sub = CreateElementSub(self, element=self.element)
+        self.frame_create_element_sub.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        
+        # Cancel button
+        #===========================================================================
+        self.cancel_button = customtkinter.CTkButton(self,
+                                                    text="Cancel",
+                                                    width=60,
+                                                    fg_color=RED,
+                                                    hover_color=DARK_RED,
+                                                    command=self.cancel
+                                                    )
+        self.cancel_button.grid(row=1, column=0, sticky="w")
+
+        # Save button
+        #===========================================================================
+        self.save_button = customtkinter.CTkButton(self,
+                                                    text="Save",
+                                                    width=60,
+                                                    command=self.save
+                                                    )
+        self.save_button.grid(row=1, column=1, sticky="e")
+    # Methods
+    #===========================================================================
+    def cancel(self):
+        logging.debug("Canceling element creation")
+        self.destroy()
+
+    def save(self):
+        logging.debug("Saving element")
+        self.frame_create_element_sub.save()
+        if not self.element.get_name() == "":
+            self.master.app.add_element(self.element)
+            self.master.update_scollable_elements(self.element)
+            self.destroy()
+        else:
+            self.frame_create_element_sub.name_warning()
+            logging.error("Element name is empty")
+
+class CreateElementSub(customtkinter.CTkFrame):
+    def __init__(self, master, element=None, **kwargs):
+        if element is None:
+            raise ValueError("Element must be provided")
+        customtkinter.CTkFrame.__init__(self, master)
+        # Attributes
+        #===========================================================================
+        self.element = element
+        PADX = 2
+        PADY = 2
+
+        # configure windows
+        #===========================================================================
+        self.grid_rowconfigure(3, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+        
+        # Header
+        #===========================================================================
+        self.header = customtkinter.CTkFrame(self)
+        self.header.grid(row=0, column=0, padx=10, sticky="nsew")
+        self.header.grid_columnconfigure(0, weight=1)
+        self.header.grid_columnconfigure(1, weight=0)
+
+        # Element name
+        self.name = customtkinter.CTkEntry(self.header, placeholder_text="name", width=100)
+        self.name.grid(row=0, column=0, padx=10, sticky="w")
+
+        # Description
+        self.description = customtkinter.CTkTextbox(self, width=300, height=100)
+        self.description.grid(row=1, column=0, padx=10)
+
+        # Power states sub frame
+        #===========================================================================
+        self.power_state_frame = customtkinter.CTkFrame(self)
+        self.power_state_frame.grid(row=2, column=0, padx=10, sticky="nsew")
+        self.power_state_frame.grid_rowconfigure(1, weight=0)
+        self.power_state_frame.grid_columnconfigure(0, weight=0)
+        # Power state
+        self.power_states = []
+        self.power_states.append(FramePowerState(self.power_state_frame,
+                                           power_state=element.get_power_state("Wake"),
+                                           name="Wake")
+                                           )
+        self.power_states[0].grid(row=0, column=0, padx=PADX, pady=PADY, sticky="ne")
+        self.power_states.append(FramePowerState(self.power_state_frame,
+                                           power_state=element.get_power_state("Active"),
+                                           name="Active")
+                                           )
+        self.power_states[1].grid(row=0, column=1, padx=PADX, pady=PADY, sticky="nw")
+        self.power_states.append(FramePowerState(self.power_state_frame,
+                                           power_state=element.get_power_state("Fall"),
+                                           name="Fall")
+                                           )
+        self.power_states[2].grid(row=1, column=0, padx=PADX, pady=PADY, sticky="se")
+        self.power_states.append(FramePowerState(self.power_state_frame,
+                                           power_state=element.get_power_state("Sleep"),
+                                           name="Sleep")
+                                           )
+        self.power_states[3].grid(row=1, column=1, padx=PADX, pady=PADY, sticky="sw")
+
+    # Methods
+    #===========================================================================
+    def save(self):
+        logging.debug("Saving element")
+        self.element.set_name(self.name.get())
+        self.element.set_description(self.description.get(1.0, "end"))
+
+    def name_warning(self):
+        self.name.configure(fg_color="red")

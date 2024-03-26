@@ -138,3 +138,10 @@ class App:
         """
         self.current_sequence = self.dict_seqs[sequence_name]
         logging.info(f"Current sequence set to {sequence_name}")
+
+    def remove_element(self, element: Element):
+        """
+        Remove an element
+        """
+        del self.dict_elts[element.name]
+        self.loaded_elts.remove(element)
