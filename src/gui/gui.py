@@ -35,6 +35,13 @@ SLEEP_COLOR = "#eb8d8d"
 IDLE_COLOR = "#ebe88d"
 ACTIVE_COLOR = "#8dc7eb"
 
+POWER_STATE_COLOR = {
+    "Wake": WAKE_COLOR,
+    "Sleep": SLEEP_COLOR,
+    "Fall": IDLE_COLOR,
+    "Active": ACTIVE_COLOR
+}
+
 # customtkinter appearance
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("green")
@@ -56,8 +63,8 @@ class GUI(customtkinter.CTk):
 
         # Sequences
         #================================
-        #self.SequencePannel = SequencePannel(self, dict_sequence=self.app.dict_seqs)
-        #self.SequencePannel.grid(row=0, column=0, sticky="new")
+        self.__SequencePannel = PannelSequence(self, self.app)
+        self.__SequencePannel.grid(row=0, column=0, sticky="new")
 
         # Graphs
         #================================
@@ -99,6 +106,18 @@ class AppGUIInterface:
     def get_app_element(self, name: str) -> Element:
         return self.app.dict_elts[name]
 
+    def get_app_current_states(self) -> list[State]:
+        return self.app.current_sequence.states
+
+    def get_app_sequence_key(self) -> list[str]:
+        return list(self.app.dict_seqs.keys())
+
+    def get_app_current_sequence_name(self) -> str:
+        return self.app.current_sequence.get_name()
+
+    def get_app_current_sequence_description(self) -> str:
+        return self.app.current_sequence.get_description()
+
     # Setters
     #================================
     def set_app_current_sequence(self, name: str):
@@ -112,10 +131,21 @@ class AppGUIInterface:
     def create_app_element(self) -> Element:
         return self.app.create_element()
     
+    def create_app_state(self) -> State:
+        return self.app.create_state()
+
     # Removers
     #================================
     def remove_app_element(self, element: Element):
         self.app.remove_element(element)
+
+    def remove_app_sequence(self, sequence: Sequence):
+        self.app.remove_sequence(sequence)
+
+    def remove_app_sequence_and_back_to_last(self, sequence: Sequence):
+        self.app.remove_sequence(sequence)
+        last_key = list(self.app.dict_seqs.keys())[-1]
+        self.app.current_sequence = self.app.dict_seqs[last_key]
 
 #================================================================================================
 # PannelElement Classes
@@ -141,13 +171,13 @@ class PannelElement(customtkinter.CTkFrame, AppGUIInterface):
 
         # Scrollable elements
         #================================
-        self.__scrollableElements = PannelScrollableElement(self, app=self.app)
-        self.__scrollableElements.grid(row=1, column=0, sticky="nsew")
+        self.__scrollable_elements = PannelScrollableElement(self, app=self.app)
+        self.__scrollable_elements.grid(row=1, column=0, sticky="nsew")
 
     # Methods
     #================================
     def update_scollable_elements(self):
-        self.__scrollableElements.update_scollable_elements()
+        self.__scrollable_elements.update_scollable_elements()
 
 class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -510,3 +540,275 @@ class CreateElementSub(customtkinter.CTkFrame):
 
     def name_warning(self):
         self.name.configure(fg_color="red")
+
+#================================================================================================
+# PannelSequence Classes
+#================================================================================================
+
+class PannelSequence(customtkinter.CTkFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkFrame.__init__(self, master, height=200)
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #================================
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
+
+        # Selection frame
+        #================================
+        self.__selection_frame = PannelSelectionSequence(self, self.app)
+        self.__selection_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Scrollable frame
+        #================================
+        self.__scrollable_frame = PannelScrollableSequence(self, self.app)
+        self.__scrollable_frame.grid(row=0, column=1, sticky="nsew")
+
+    # Methods
+    #================================
+    def update_scrollable_state(self):
+        self.__scrollable_frame.update_scrollable_state()
+    
+class PannelScrollableSequence(customtkinter.CTkScrollableFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkScrollableFrame.__init__(self, master, orientation="horizontal")
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #================================
+        self.state_frame = []
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_columnconfigure((0, 1, 2, 3), minsize=150)
+
+        # States
+        #================================
+        self.update_scrollable_state()
+
+    # Methods
+    #================================
+    def add_hidden_state(self):
+        for state in self.get_app_current_states():
+            state_frame = StateFrame(self, state)
+            state_frame.grid(row=0, column=len(self.state_frame), sticky="nsew", padx=2)
+            self.state_frame.append(state_frame)
+
+    def remove_obsolete_state(self):
+        for frame in self.state_frame:
+                frame.destroy()
+                self.state_frame.remove(frame)
+
+    def update_scrollable_state(self):
+        self.remove_obsolete_state()
+        self.add_hidden_state()
+
+class StateFrame(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, state: State=None):
+        if state is None:
+            raise ValueError("State must be provided")
+        super().__init__(master, border_width=1)
+        # Attributes
+        #================================
+        self.state = state
+        self.elements_frame = []
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Header
+        #================================
+        self.header = customtkinter.CTkFrame(self)
+        self.header.grid(row=0, column=0, sticky="nsew")
+        self.header.grid_columnconfigure(1, weight=1)
+
+        # Name
+        self.name = customtkinter.CTkLabel(self.header,
+                                           text=self.state.get_name()
+                                           )
+        self.name.grid(row=0, column=1, sticky="we")
+
+        # Description
+        #================================
+        self.description = customtkinter.CTkLabel(self,
+                                                    width=100,
+                                                    height=50,
+                                                    text=self.state.get_description()
+                                                    )
+        self.description.grid(row=1, column=0, columnspan=2, sticky="we")
+
+        # Elements
+        #================================
+        for i, elt in enumerate(self.state.elements):
+            self.elements_frame.append(ElementSubState(self, elt["element"], elt["power_state"]))
+            self.elements_frame[i].grid(row=i+2, column=0, sticky="nsew")
+    
+    # Methods
+    #================================
+
+
+class ElementSubState(customtkinter.CTkFrame):
+    def __init__(self, master, element: Element=None, power_state: PowerState=None):
+        if element is None:
+            raise ValueError("Element must be provided")
+        if power_state is None:
+            raise ValueError("Power state must be provided")
+        super().__init__(master)
+
+        # Attributes
+        #================================
+        self.element = element
+        self.power_state = power_state
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Element name
+        #================================
+        self.label_name = customtkinter.CTkLabel(self,
+                                           text=self.element.get_name(),
+                                           padx=4,
+                                           fg_color=POWER_STATE_COLOR[self.power_state]
+                                           )
+        self.label_name.grid(row=0, column=0, sticky="w")
+
+        # Power state
+        #================================
+        self.label_power_state = customtkinter.CTkLabel(self,
+                                                    text=self.power_state,
+                                                    padx=10,
+                                                    fg_color=POWER_STATE_COLOR[self.power_state]
+                                                    )
+        self.label_power_state.grid(row=0, column=1, sticky="e")
+
+        # Power consumption
+        #================================
+        self.power_frame = customtkinter.CTkFrame(self)
+        self.power_frame.grid(row=1, column=0, sticky="nsew")
+        text_power = customtkinter.StringVar(value=f2s(self.element.get_power(self.power_state)))
+        self.label_power = customtkinter.CTkEntry(self.power_frame,
+                                                    textvariable=text_power,
+                                                    width=65,
+                                                    state="disabled"
+                                                    )
+        self.label_power.grid(row=0, column=0, sticky="w")
+        self.label_power_name = customtkinter.CTkLabel(self.power_frame,
+                                                        text=" W",
+                                                        )
+        self.label_power_name.grid(row=0, column=1, sticky="w")
+
+        # Time
+        #================================
+        self.time_frame = customtkinter.CTkFrame(self)
+        self.time_frame.grid(row=1, column=1, padx=10)
+        text_time = customtkinter.StringVar(value=f2s(self.element.get_time(self.power_state)))
+        self.label_time = customtkinter.CTkEntry(self.time_frame,
+                                                    textvariable=text_time,
+                                                    width=65,
+                                                    state="disabled"
+                                                    )
+        self.label_time.grid(row=0, column=0, sticky="e")
+        self.label_time_name = customtkinter.CTkLabel(self.time_frame,
+                                                    text=" s",
+                                                    )
+        self.label_time_name.grid(row=0, column=1, sticky="e")
+
+class PannelSelectionSequence(customtkinter.CTkFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #================================
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_columnconfigure(0, weight=0)
+
+        # Label pannel
+        #================================
+        self.label = customtkinter.CTkLabel(self,
+                                            text="Available sequences",
+                                            bg_color="gray",
+                                            padx=10
+                                            )
+        self.label.grid(row=0, column=0)
+
+        # Selection frame
+        #================================
+        self.selection_frame = customtkinter.CTkFrame(self)
+        self.selection_frame.grid(row=1, column=0, sticky="nsew")
+
+        # Sequence selection
+        self.sequence_selection = customtkinter.CTkComboBox(self.selection_frame,
+                                                            values=self.get_app_sequence_key(),
+                                                            command=self.selection_sequence
+                                                            )
+        self.sequence_selection.set(self.get_app_current_sequence_name())
+        self.sequence_selection.grid(row=0, column=0, columnspan=2)
+
+        # Delete button
+        self.delete_button = customtkinter.CTkButton(self.selection_frame,
+                                                    text="Delete",
+                                                    width=60,
+                                                    fg_color=RED,
+                                                    hover_color=DARK_RED,
+                                                    command=self.delete_sequence
+                                                    )
+        self.delete_button.grid(row=1, column=0, sticky="nw")
+
+        # Add button
+        self.add_button = customtkinter.CTkButton(self.selection_frame,
+                                                text="Add",
+                                                width=60,
+                                                command=self.add_sequence
+                                                )
+        self.add_button.grid(row=1, column=1, sticky="ne")
+
+        # Sequence edition
+        #================================
+        self.sequence_edition = customtkinter.CTkFrame(self)
+        self.sequence_edition.grid(row=2, column=0)
+
+        # Description
+        self.label = customtkinter.CTkLabel(self.sequence_edition, text=self.get_app_current_sequence_description, height=50)
+        self.label.grid(row=0, column=0)
+
+        # Add state button
+        self.add_state_button = customtkinter.CTkButton(self.sequence_edition,
+                                                        text="Add state",
+                                                        command=self.add_state
+                                                        )
+        self.add_state_button.grid(row=1, column=0)
+
+    # Methods
+    #================================
+    def selection_sequence(self, *args):
+        self.set_app_current_sequence(self.sequence_selection.get())
+        self.update_selection()
+        self.master.update_scrollable_state()
+
+    def delete_sequence(self):
+        self.remove_app_sequence_and_back_to_last(self.get_app_current_sequence())
+        self.update_selection()
+
+    def add_sequence(self):
+        CreateSequence(self, self.create_app_sequence())
+
+    def update_selection(self):
+        self.sequence_selection.configure(values=self.get_app_sequence_key())
+        self.master.scrollable_frame.current_sequence = self.master.current_sequence
+        self.label.configure(text=self.get_app_current_sequence_description())  
+    
+    def add_state(self):
+        CreateState(self, self.create_app_state())
