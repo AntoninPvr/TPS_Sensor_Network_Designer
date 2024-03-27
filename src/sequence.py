@@ -42,6 +42,9 @@ class Sequence:
 
     def get_name(self):
         return self.name
+    
+    def get_description(self):
+        return self.description
 
     # Setters
     #===========================================================================

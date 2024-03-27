@@ -137,10 +137,14 @@ class App:
         del self.dict_seqs[sequence.name]
         self.loaded_seqs.remove(sequence)
 
-    def remove_state(self, sequence: Sequence, state: State):
+    def remove_state(self, state: State, sequence: Sequence=None):
         """
         Remove a state from a sequence
+
+        None is the current sequence
         """
+        if sequence is None:
+            sequence = self.current_sequence
         sequence.remove_state(state)
 
     def remove_element(self, element: Element):
