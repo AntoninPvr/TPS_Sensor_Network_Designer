@@ -143,8 +143,11 @@ class PannelElement(customtkinter.CTkFrame, AppGUIInterface):
         #================================
         self.__scrollableElements = PannelScrollableElement(self, app=self.app)
         self.__scrollableElements.grid(row=1, column=0, sticky="nsew")
+
     # Methods
     #================================
+    def update_scollable_elements(self):
+        self.__scrollableElements.update_scollable_elements()
 
 class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -174,7 +177,7 @@ class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
     #================================
     def create_element(self):
         logging.debug("Creating new element")
-        CreateElement(self.master)
+        WinCreateElement(self, self.app)
 
 class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface):
     def __init__(self, master, app: App=None, **kwargs):
@@ -382,7 +385,7 @@ class FramePowerState(customtkinter.CTkFrame):
         else:
             self.power_state.set_time(0)
 
-class CreateElement(customtkinter.CTkToplevel, AppGUIInterface):
+class WinCreateElement(customtkinter.CTkToplevel, AppGUIInterface):
     def __init__(self, master, app: App=None, **kwargs):
         customtkinter.CTkToplevel.__init__(self, master)
         AppGUIInterface.__init__(self, app)
@@ -431,8 +434,8 @@ class CreateElement(customtkinter.CTkToplevel, AppGUIInterface):
         logging.debug("Saving element")
         self.frame_create_element_sub.save()
         if not self.element.get_name() == "":
-            self.master.app.add_element(self.element)
-            self.master.update_scollable_elements(self.element)
+            self.app.add_element(self.element)
+            self.master.master.update_scollable_elements()
             self.destroy()
         else:
             self.frame_create_element_sub.name_warning()
