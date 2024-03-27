@@ -51,8 +51,6 @@ POWER_STATE_COLOR = {
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("green")
 
-
-
 class GUI(customtkinter.CTk):
     def __init__(self, app: App = App()):
         super().__init__()
@@ -85,7 +83,11 @@ class GUI(customtkinter.CTk):
         #================================
         self.__pannel_element = PannelElement(self, self.app)
         self.__pannel_element.grid(row=0, column=2, rowspan=2, sticky="senw", padx=2)
-
+    
+    # Methods
+    #================================
+    def update_state_spinbox(self): #Dirty
+        self.__battery.update_state_spinbox()
 
 #================================================================================================
 # BaseGUIClass
@@ -676,6 +678,7 @@ class PannelScrollableSequence(customtkinter.CTkScrollableFrame, AppGUIInterface
     def remove_state(self, state: State):
         self.remove_app_state(state)
         self.update_scrollable_state()
+        self.master.master.master.master.update_state_spinbox()
 
 class StateFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, state: State=None):
@@ -1056,6 +1059,7 @@ class WinCreateState(customtkinter.CTkToplevel, AppGUIInterface):
             self.get_app_current_sequence().add_state(self.state)
             self.master.update_scrollable_state()
             self.destroy()
+            self.master.master.master.update_state_spinbox()
             logging.info(f"State {self.state.get_name()} created")
         else:
             self.name.configure(fg_color="red")
@@ -1408,7 +1412,11 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         #
     # Methods
     #================================
-        
+    def update_state_spinbox(self):
+        self.__state_spinbox.max_value=len(self.get_app_current_states())-1
+        if int(self.__state_spinbox.get()) > len(self.get_app_current_states())-1:
+            self.__state_spinbox.set(len(self.get_app_current_states())-1)
+
     def update(self):
         self.__capacity.set(f2s(self.get_app_battery_capacity()))
         self.__max_power.set(f2s(self.get_app_battery_max_output_power()))
