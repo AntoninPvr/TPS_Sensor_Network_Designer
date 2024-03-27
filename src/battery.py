@@ -13,7 +13,7 @@ class Battery():
                  capacity: float=0, # in Joules
                  input_power: float=0, # in Watts
                  max_output_power: float=0, # in Watts
-                 efficiency: float=1.0, 
+                 efficiency: float=100, # in percentage
                  current_capacity: float=0.0 # in Joules
                  ):
         
@@ -95,7 +95,9 @@ class Battery():
 
     # Methods
     #================================
-    def discharge(self, power: float=None, time: float=None):
+    def discharge_until_empty(self, power: float=None, time: float=None):
+        if self.current_capacity <= 0:
+            raise ValueError("Battery is already empty")
         if power is None:
             raise ValueError("Power must be specified")
         if time is None:
@@ -110,3 +112,13 @@ class Battery():
             self.current_capacity -= energy
             logging.info(f"Battery discharged by {energy} J")
             return(None)
+        
+    def discharge(self, power: float=None, time: float=None):
+        if power is None:
+            raise ValueError("Power must be specified")
+        if time is None:
+            raise ValueError("Time must be specified")
+        
+        energy = power * time
+        self.current_capacity -= energy
+

@@ -61,6 +61,12 @@ class State:
     
     def get_description(self):
         return self.description
+    
+    def get_power():
+        pass
+
+    def get_time():
+        pass
 
     # Setters
     #===========================================================================

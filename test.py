@@ -23,7 +23,7 @@ def test_app():
     app.battery.set_capacity(1000)
     app.battery.set_input_power(0)
     app.battery.set_max_output_power(200)
-    app.battery.set_efficiency(1)
+    app.battery.set_efficiency(100)
     app.battery.set_current_capacity(1000)
     app.save_battery()
     return(app)

@@ -24,6 +24,7 @@ class App:
         self.dict_seqs = {seq.name: seq for seq in self.loaded_seqs}
         self.current_sequence = self.loaded_seqs[0] if len(self.loaded_seqs) > 0 else None
         self.battery = self.__load_battery()
+        self.current_state = 0
 
     # Load and save functions
     #================================
@@ -187,3 +188,24 @@ class App:
         Returns the power consumption of the current sequence
         """
         return self.current_sequence.generate_power_data()
+
+    def step_state(self, n_step: int=0):
+        """
+        Step the current state
+        """
+        final_state_index = n_step
+        if final_state_index < 0:
+            raise IndexError("Index out of range Too low")
+        if final_state_index >= len(self.current_sequence.states):
+            raise IndexError("Index out of range Too high")
+        
+        for i in range(1, final_state_index+1):
+            state_powers = self.current_sequence.states[i].get_power()
+            state_times = self.current_sequence.states[i].get_time()
+            for power, time in zip(state_powers, state_times):
+                self.battery.discharge(power, time)
+        self.current_state = final_state_index
+
+                    
+            
+            

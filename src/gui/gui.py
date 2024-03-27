@@ -13,6 +13,7 @@ from src.sequence import Sequence
 from src.state import State
 from src.elements import Element
 from src.power_state import PowerState
+from src.battery import Battery
 
 # Matplotlib
 from matplotlib.figure import Figure
@@ -100,38 +101,82 @@ class AppGUIInterface:
     
     # Getters
     #================================
+    # Current sequence
     def get_app_current_sequence(self) -> Sequence:
         return self.app.current_sequence
     
+    def get_app_current_sequence_name(self) -> str:
+        return self.app.current_sequence.get_name()
+    
+    def get_app_current_sequence_description(self) -> str:
+        return self.app.current_sequence.get_description()
+    
+    def get_app_current_states(self) -> list[State]:
+        return self.app.current_sequence.states
+    
+    # Sequences
     def get_app_list_sequence(self) -> list[Sequence]:
         return self.app.loaded_seqs
     
-    def get_app_list_elements(self) -> list[Element]:
-        return self.app.loaded_elts
-
+    def get_app_sequence_key(self) -> list[str]:
+        return list(self.app.dict_seqs.keys())
+    
     def get_app_sequence(self, name: str) -> Sequence:
         return self.app.dict_seqs[name]
 
+    # Elements
+    def get_app_list_elements(self) -> list[Element]:
+        return self.app.loaded_elts
+
     def get_app_element(self, name: str) -> Element:
         return self.app.dict_elts[name]
-
-    def get_app_current_states(self) -> list[State]:
-        return self.app.current_sequence.states
-
-    def get_app_sequence_key(self) -> list[str]:
-        return list(self.app.dict_seqs.keys())
-
-    def get_app_current_sequence_name(self) -> str:
-        return self.app.current_sequence.get_name()
-
-    def get_app_current_sequence_description(self) -> str:
-        return self.app.current_sequence.get_description()
+    
+    # Battery
+    def get_app_battery(self) -> Battery:
+        return self.app.battery
+    
+    def get_app_battery_name(self) -> str:
+        return self.app.battery.get_name()
+    
+    def get_app_battery_capacity(self) -> float:
+        return self.app.battery.get_capacity()
+    
+    def get_app_battery_input_power(self) -> float:
+        return self.app.battery.get_input_power()
+    
+    def get_app_battery_max_output_power(self) -> float:
+        return self.app.battery.get_max_output_power()
+    
+    def get_app_battery_efficiency(self) -> float:
+        return self.app.battery.get_efficiency()
+    
+    def get_app_battery_current_capacity(self) -> float:
+        return self.app.battery.get_current_capacity()
 
     # Setters
     #================================
     def set_app_current_sequence(self, name: str):
         self.app.set_current_sequence(name)
     
+    # Battery
+    def set_app_battery_name(self, name: str):
+        self.app.battery.set_name(name)
+
+    def set_app_battery_capacity(self, capacity: float):
+        self.app.battery.set_capacity(capacity)
+
+    def set_app_battery_input_power(self, input_power: float):
+        self.app.battery.set_input_power(input_power)
+    
+    def set_app_battery_max_output_power(self, max_output_power: float):
+        self.app.battery.set_max_output_power(max_output_power)
+
+    def set_app_battery_efficiency(self, efficiency: float):
+        self.app.battery.set_efficiency(efficiency)
+    
+    def set_app_battery_current_capacity(self, current_capacity: float):
+        self.app.battery.set_current_capacity(current_capacity)
+
     # Create instances
     #================================
     def create_app_sequence(self) -> Sequence:
@@ -1202,7 +1247,7 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         # Configure windows
         #================================
         self.grid_rowconfigure(0, weight=0)
-        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(0, weight=1)
 
         # Label pannel
         #================================
@@ -1211,4 +1256,300 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
                                             bg_color="gray",
                                             padx=10
                                             )
-        self.__label.grid(row=0, column=0)
+        self.__label.grid(row=0, column=0, columnspan=3)
+
+        # Name
+        #================================
+        self.__label_name = customtkinter.CTkLabel(self,
+                                                text=self.get_app_battery_name(),
+                                                padx=10
+                                                )
+        self.__label_name.grid(row=1, column=0)
+
+        # Capacity
+        #================================
+        self.__label_capacity = customtkinter.CTkLabel(self,
+                                                       text="Capacity"
+                                                       )
+        self.__label_capacity.grid(row=2, column=0)
+
+        self.__capacity = customtkinter.StringVar(value=f2s(self.get_app_battery_capacity()))
+        self.__capacity.trace_add("write", self.update_capacity)
+        self.__entry_capacity = customtkinter.CTkEntry(self,
+                                                    textvariable=self.__capacity,
+                                                    width=65
+                                                    )
+        self.__entry_capacity.grid(row=2, column=1, sticky="ne")
+
+        self.__capacity_unit = customtkinter.CTkLabel(self,
+                                                    text="J",
+                                                    width=20
+                                                    )
+        self.__capacity_unit.grid(row=2, column=2, sticky="e")
+
+        # Max power
+        #================================
+        self.__label_max_power = customtkinter.CTkLabel(self,
+                                                       text="Max power"
+                                                       )
+        self.__label_max_power.grid(row=3, column=0)
+
+        self.__max_power = customtkinter.StringVar(value=f2s(self.get_app_battery_max_output_power()))
+        self.__max_power.trace_add("write", self.update_max_power)
+        self.__entry_max_power = customtkinter.CTkEntry(self,
+                                                    textvariable=self.__max_power,
+                                                    width=65
+                                                    )
+        self.__entry_max_power.grid(row=3, column=1, sticky="ne")
+
+        self.__max_power_unit = customtkinter.CTkLabel(self,
+                                                    text="W",
+                                                    width=20,
+                                                    )
+        self.__max_power_unit.grid(row=3, column=2, sticky="e")
+
+        # Input power
+        #================================
+        self.__label_input_power = customtkinter.CTkLabel(self,
+                                                       text="Input power"
+                                                       )
+        self.__label_input_power.grid(row=4, column=0)
+
+        self.__input_power = customtkinter.StringVar(value=f2s(self.get_app_battery_input_power()))
+        self.__input_power.trace_add("write", self.update_input_power)
+        self.__entry_input_power = customtkinter.CTkEntry(self,
+                                                    textvariable=self.__input_power,
+                                                    width=65
+                                                    )
+        self.__entry_input_power.grid(row=4, column=1, sticky="ne")
+
+        self.__input_power_unit = customtkinter.CTkLabel(self,
+                                                    text="W",
+                                                    width=20
+                                                    )
+        self.__input_power_unit.grid(row=4, column=2, sticky="e")
+
+        # Efficiency
+        #================================
+        self.__label_efficiency = customtkinter.CTkLabel(self,
+                                                       text="Efficiency"
+                                                       )
+        self.__label_efficiency.grid(row=5, column=0)
+
+        self.__efficiency = customtkinter.StringVar(value=f2s(self.get_app_battery_efficiency()))
+        self.__efficiency.trace_add("write", self.update_efficiency)
+        self.__entry_efficiency = customtkinter.CTkEntry(self,
+                                                    textvariable=self.__efficiency,
+                                                    width=65
+                                                    )
+        self.__entry_efficiency.grid(row=5, column=1, sticky="ne")
+
+        self.__efficiency_unit = customtkinter.CTkLabel(self,
+                                                    text="%",
+                                                    width=20
+                                                    )
+        self.__efficiency_unit.grid(row=5, column=2, sticky="e")
+    
+        # Current capacity
+        #================================
+        self.__label_current_capacity = customtkinter.CTkLabel(self,
+                                                       text="Current"
+                                                       )
+        self.__label_current_capacity.grid(row=6, column=0)
+
+        self.__current_capacity = customtkinter.StringVar(value=f2s(self.get_app_battery_current_capacity()))
+        self.__current_capacity.trace_add("write", self.update_current_capacity)
+        self.__entry_current_capacity = customtkinter.CTkEntry(self,
+                                                    textvariable=self.__current_capacity,
+                                                    width=65
+                                                    )
+        self.__entry_current_capacity.grid(row=6, column=1, sticky="ne")
+
+        self.__current_capacity_unit = customtkinter.CTkLabel(self,
+                                                    text="J",
+                                                    width=20
+                                                    )
+        self.__current_capacity_unit.grid(row=6, column=2, sticky="e")
+
+        # Buttons
+        #================================
+        self.__button_frame = customtkinter.CTkFrame(self)
+        self.__button_frame.grid(row=7, column=0, columnspan=3, sticky="nswe")
+    
+        # Fill Button
+        self.__fill_button = customtkinter.CTkButton(self.__button_frame,
+                                                    text="Fill battery",
+                                                    width=60,
+                                                    command=self.fill
+                                                    )
+        self.__fill_button.grid(row=0, column=0, sticky="w")
+
+        # Update graph Button
+        self.__update_graph_button = customtkinter.CTkButton(self.__button_frame,
+                                                        text="Update graph",
+                                                        width=60,
+                                                        command=self.update_graph
+                                                        )
+        self.__update_graph_button.grid(row=0, column=1, sticky="w")
+
+        # Step state frame
+        #================================
+        self.__step_state_frame = customtkinter.CTkFrame(self)
+        self.__step_state_frame.grid(row=8, column=0, columnspan=3, sticky="nswe")
+        
+        # State spinbox
+        self.__state_spinbox = Spinbox(self.__step_state_frame, step_size=1)
+        self.__state_spinbox.grid(row=0, column=0, sticky="w")
+
+        #
+    # Methods
+    #================================
+        
+    def update(self):
+        self.__capacity.set(f2s(self.get_app_battery_capacity()))
+        self.__max_power.set(f2s(self.get_app_battery_max_output_power()))
+        self.__input_power.set(f2s(self.get_app_battery_input_power()))
+        self.__efficiency.set(f2s(self.get_app_battery_efficiency()))
+        self.__current_capacity.set(f2s(self.get_app_battery_current_capacity()))
+
+    def update_capacity(self, *args):
+        self.__entry_capacity.configure(fg_color="white")
+        if self.__entry_capacity.get() != "":
+            try:
+                if s2f(self.__entry_capacity.get()) > 0:
+                    self.set_app_battery_capacity(s2f(self.__entry_capacity.get()))
+                else:
+                    raise ValueError("Capacity must be positive")
+            except ValueError:
+                self.set_app_battery_capacity(0)
+                self.__capacity.set(0)
+                self.__entry_capacity.configure(fg_color="red")
+        else:
+            self.set_app_battery_capacity(0)
+    
+    def update_max_power(self, *args):
+        self.__entry_max_power.configure(fg_color="white")
+        if self.__entry_max_power.get() != "":
+            try:
+                if s2f(self.__entry_max_power.get()) > 0:
+                    self.set_app_battery_max_output_power(s2f(self.__entry_max_power.get()))
+                else:
+                    raise ValueError("Max power must be positive")
+            except ValueError:
+                self.set_app_battery_max_output_power(0)
+                self.__max_power.set(0)
+                self.__entry_max_power.configure(fg_color="red")
+        else:
+            self.set_app_battery_max_output_power(0)
+    
+    def update_input_power(self, *args):
+        self.__entry_input_power.configure(fg_color="white")
+        if self.__entry_input_power.get() != "":
+            try:
+                if s2f(self.__entry_input_power.get()) >= 0:
+                    self.set_app_battery_input_power(s2f(self.__entry_input_power.get()))
+                else:
+                    raise ValueError("Max power must be positive")
+            except ValueError:
+                self.set_app_battery_input_power(0)
+                self.__input_power.set(0)
+                self.__entry_input_power.configure(fg_color="red")
+        else:
+            self.set_app_battery_input_power(0)
+
+    def update_efficiency(self, *args):
+        self.__entry_efficiency.configure(fg_color="white")
+        if self.__entry_efficiency.get() != "":
+            try:
+                if s2f(self.__entry_efficiency.get()) > 0 and s2f(self.__entry_efficiency.get()) <= 100:
+                    self.set_app_battery_efficiency(s2f(self.__entry_efficiency.get()))
+                else:
+                    raise ValueError("Efficiency must stay between 0 and 100%")
+            except ValueError:
+                self.set_app_battery_efficiency(100)
+                self.__efficiency.set(100)
+                self.__entry_efficiency.configure(fg_color="red")
+        else:
+            self.set_app_battery_efficiency(100)
+    
+    def update_current_capacity(self, *args):
+        self.__entry_current_capacity.configure(fg_color="white")
+        if self.__entry_current_capacity.get() != "":
+            try:
+                if s2f(self.__entry_current_capacity.get()) <= self.get_app_battery_capacity():
+                    self.set_app_battery_current_capacity(s2f(self.__entry_current_capacity.get()))
+                else:
+                    raise ValueError("Current capacity must be bellow full capacity")
+            except ValueError:
+                self.set_app_battery_current_capacity(0)
+                self.__current_capacity.set(0)
+                self.__entry_current_capacity.configure(fg_color="red")
+        else:
+            self.set_app_battery_current_capacity(0)
+
+    def fill(self, *args):
+        self.set_app_battery_current_capacity(self.get_app_battery_capacity())
+        self.update()
+    
+    def update_graph(self, *args):
+        pass
+
+class Spinbox(customtkinter.CTkFrame):
+    def __init__(self, *args,
+                 width: int = 100,
+                 height: int = 32,
+                 step_size: int = 1,
+                 command = None,
+                 **kwargs
+                 ):
+        super().__init__(*args, width=width, height=height, **kwargs)
+
+        self.step_size = step_size
+        self.command = command
+
+        self.grid_columnconfigure((0, 2), weight=0)  # buttons don't expand
+        self.grid_columnconfigure(1, weight=1)  # entry expands
+
+        self.subtract_button = customtkinter.CTkButton(self, text="-", width=height-6, height=height-6,
+                                                       command=self.subtract_button_callback)
+        self.subtract_button.grid(row=0, column=0, padx=(3, 0), pady=3)
+
+        self.entry = customtkinter.CTkEntry(self, width=width-(2*height), height=height-6, border_width=0)
+        self.entry.grid(row=0, column=1, columnspan=1, padx=3, pady=3, sticky="ew")
+
+        self.add_button = customtkinter.CTkButton(self, text="+", width=height-6, height=height-6,
+                                                  command=self.add_button_callback)
+        self.add_button.grid(row=0, column=2, padx=(0, 3), pady=3)
+
+        # default value
+        self.entry.insert(0, "0")
+
+    def add_button_callback(self):
+        if self.command is not None:
+            self.command()
+        try:
+            value = int(self.entry.get()) + self.step_size
+            self.entry.delete(0, "end")
+            self.entry.insert(0, value)
+        except ValueError:
+            return
+
+    def subtract_button_callback(self):
+        if self.command is not None:
+            self.command()
+        try:
+            value = int(self.entry.get()) - self.step_size
+            self.entry.delete(0, "end")
+            self.entry.insert(0, value)
+        except ValueError:
+            return
+
+    def get(self) -> int:
+        try:
+            return self.entry.get()
+        except ValueError:
+            return None
+
+    def set(self, value: int):
+        self.entry.delete(0, "end")
+        self.entry.insert(0, str(int(value)))
