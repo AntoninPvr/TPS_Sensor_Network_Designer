@@ -60,3 +60,22 @@ def f2s(value: float, ndigit: int=4) -> str:
             if value < units[unit]:
                 return f"{round(value/units[last_unit], ndigit)}{last_unit}"
             last_unit = unit
+
+def cheat_data_for_graph(T, Y):
+    """
+    Cheat data for graph
+    adding fake time and power value to fix the graph
+    """
+    print(f"Y: {Y}")
+    print(f"T: {T}")
+    newT = [T[0]]
+    newY = [Y[0]]
+    for i in range(1, len(T)):
+        newT.append(T[i]-(T[i]-T[i-1])/100)
+        newY.append(Y[i-1])
+        newT.append(T[i])
+        newY.append(Y[i])
+    print("===")
+    print(f"Y: {newY}")
+    print(f"T: {newT}")
+    return newT, newY

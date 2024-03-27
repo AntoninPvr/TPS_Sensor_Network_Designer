@@ -38,8 +38,15 @@ class Sequence:
         """
         Returns the maximum power consumption of the sequence
         """
-        return max(self.states, key=lambda x: x.get_max_power())
-
+        powers = [state.get_max_power() for state in self.states]
+        return max(powers)
+    
+    def get_max_time(self):
+        """
+        Returns the maximum time of the sequence
+        """
+        return sum([state.get_max_time() for state in self.states])
+    
     def get_name(self):
         return self.name
     
@@ -79,9 +86,7 @@ class Sequence:
         for state in self.states:
             Xstate, Tstate = state.generate_power_data()
             X += Xstate # Concatenate power lists
-            last_time = T[-1] if T else 0
-            for t in Tstate:
-                T.append(t+last_time)
+            T += Tstate # Concatenate time lists
         return X, T
     
     def shift_states(self, initial: int=0, state: State=None):

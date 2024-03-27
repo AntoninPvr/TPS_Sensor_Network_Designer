@@ -118,6 +118,12 @@ class App:
         if index >= len(self.loaded_elts):
             raise IndexError("Index out of range")
         return self.loaded_elts[index]
+    
+    def get_max_power(self):
+        return self.current_sequence.get_max_power()
+    
+    def get_max_time(self):
+        return self.current_sequence.get_max_time()
 
     # Setters
     #================================
@@ -193,7 +199,8 @@ class App:
         """
         Step the current state
         """
-        final_state_index = n_step
+        self.battery.set_capacity(self.battery.capacity)
+        final_state_index = n_step-1
         if final_state_index < 0:
             raise IndexError("Index out of range Too low")
         if final_state_index >= len(self.current_sequence.states):

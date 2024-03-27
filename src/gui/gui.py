@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 # Misc
-from src.utils import s2f, f2s
+from src.utils import s2f, f2s, cheat_data_for_graph
 
 #================================================================================================
 # Appearance
@@ -89,6 +89,11 @@ class GUI(customtkinter.CTk):
     def update_state_spinbox(self): #Dirty
         self.__battery.update_state_spinbox()
 
+    def update_scrollable_states(self): #Dirty
+        self.__SequencePannel.update_scrollable_state()
+
+    def update_graph(self): #Dirty
+        self.__GraphPannel.update_graph()
 #================================================================================================
 # BaseGUIClass
 #================================================================================================
@@ -125,6 +130,12 @@ class AppGUIInterface:
     
     def get_app_sequence(self, name: str) -> Sequence:
         return self.app.dict_seqs[name]
+    
+    def get_max_power(self) -> float:
+        return self.app.get_max_power()
+    
+    def get_max_time(self) -> float:
+        return self.app.get_max_time()
 
     # Elements
     def get_app_list_elements(self) -> list[Element]:
@@ -216,6 +227,9 @@ class AppGUIInterface:
     def step_state(self, index: int=0):
         self.app.step_state(index)
 
+    def generate_power_data(self):
+        return self.app.generate_power_data()
+
 #================================================================================================
 # PannelElement Classes
 #================================================================================================
@@ -245,8 +259,8 @@ class PannelElement(customtkinter.CTkFrame, AppGUIInterface):
 
     # Methods
     #================================
-    def update_scollable_elements(self):
-        self.__scrollable_elements.update_scollable_elements()
+    def update_scrollable_elements(self):
+        self.__scrollable_elements.update_scrollable_elements()
 
 class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -295,7 +309,7 @@ class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface)
 
         # Add elements
         #================================
-        self.update_scollable_elements()
+        self.update_scrollable_elements()
 
     # Methods
     #================================
@@ -312,7 +326,7 @@ class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface)
                 frame.destroy()
                 self.__elt_frames.remove(frame)
 
-    def update_scollable_elements(self):
+    def update_scrollable_elements(self):
         self.remove_obsolete_element()
         self.add_hidden_element()
 
@@ -354,7 +368,7 @@ class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
             logging.debug(f"Deleting {self.__element.get_name()}")
             self.destroy()
             self.remove_app_element(self.__element)
-            self.__master.update_scollable_elements()
+            self.__master.update_scrollable_elements()
         
         self.__destroy_button = customtkinter.CTkButton(self.__header,
                                                       text="X",
@@ -461,7 +475,7 @@ class FramePowerState(customtkinter.CTkFrame):
     # Methods
     #===========================================================================
     def update_power(self, *args):
-        self.power.configure(fg_color="white")
+        self.power.configure(fg_color=self.color)
         if self.entry_power.get() != "":
             try:
                 self.power_state.set_power(s2f(self.entry_power.get()))
@@ -473,7 +487,7 @@ class FramePowerState(customtkinter.CTkFrame):
             self.power_state.set_power(0)
 
     def update_time(self, *args):
-        self.time.configure(fg_color="white")
+        self.time.configure(fg_color=self.color)
         if self.entry_time.get() != "":
             try:
                 self.power_state.set_time(s2f(self.entry_time.get()))
@@ -534,7 +548,7 @@ class WinCreateElement(customtkinter.CTkToplevel, AppGUIInterface):
         self.frame_create_element_sub.save()
         if not self.element.get_name() == "":
             self.app.add_element(self.element)
-            self.master.master.update_scollable_elements()
+            self.master.master.update_scrollable_elements()
             self.destroy()
         else:
             self.frame_create_element_sub.name_warning()
@@ -901,6 +915,13 @@ class PannelSelectionSequence(customtkinter.CTkFrame, AppGUIInterface):
                                                         )
         self.add_state_button.grid(row=1, column=0)
 
+        # Update states
+        self.update_state_element = customtkinter.CTkButton(self.sequence_edition,
+                                                    text="Update elements",
+                                                    command=self.master.update_scrollable_state
+                                                    )
+        self.update_state_element.grid(row=2, column=0, pady=10)
+
     # Methods
     #================================
     def selection_sequence(self, *args):
@@ -989,6 +1010,7 @@ class WinCreateSequence(customtkinter.CTkToplevel, AppGUIInterface):
             self.set_app_current_sequence(name)
             self.master.update_selection()
             self.master.master.update_scrollable_state()
+            self.master.master.master.update_state_spinbox()
             self.destroy()
             logging.info(f"Sequence {self.sequence.get_name()} created")   
         else:
@@ -1179,7 +1201,14 @@ class PannelGraph(customtkinter.CTkFrame, AppGUIInterface):
 
         # Graph
         #================================
-        self.__graph = Graph(self, app=self.app)
+        self.__graph = GraphWithCanvas(self, app=self.app)
+        self.__graph.grid(row=1, column=0, sticky="nsew")
+    
+    # Methods
+    #================================
+    def update_graph(self):
+        self.__graph.destroy()
+        self.__graph = GraphWithCanvas(self, app=self.app)
         self.__graph.grid(row=1, column=0, sticky="nsew")
 
 class Graph(customtkinter.CTkFrame, AppGUIInterface):
@@ -1202,14 +1231,20 @@ class Graph(customtkinter.CTkFrame, AppGUIInterface):
 
         # Add data
         #================================
+        self.plot_sequence()
+
+    def plot_sequence(self):
         self.__fig = Figure(figsize=(7, 4), dpi=100)
 
-        self.y = [i**2 for i in range(101)] 
+        self.y, self.t = self.generate_power_data()
+        self.t, self.y = cheat_data_for_graph(self.t, self.y)
         self.plot1 = self.__fig.add_subplot(111)
-        self.plot1.plot(self.y)
+
+        self.plot1.plot(self.t, self.y)
         self.plot1.set_title("Power consumption")
-        self.plot1.set_xlabel("Time")
+        self.plot1.set_xlabel("Time (s)")
         self.plot1.set_ylabel("Power (W)")
+
         self.__fig.tight_layout()
         self.canvas = FigureCanvasTkAgg(self.__fig, master=self.__graph)
         self.canvas.draw()
@@ -1217,6 +1252,45 @@ class Graph(customtkinter.CTkFrame, AppGUIInterface):
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.__graph)
         self.toolbar.update()
         self.canvas.get_tk_widget().pack()
+
+class GraphWithCanvas(customtkinter.CTkFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #================================
+        self.WIDTH = 700
+        self.HEIGHT = 500
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Graph
+        #================================
+        self.__graph = customtkinter.CTkCanvas(self, width=self.WIDTH, height=self.HEIGHT)
+        self.__graph.grid(row=0, column=0, sticky="nse")
+        
+        # Add data
+        #================================
+        self.update_graph()
+
+    # Methods
+    #================================
+    def update_graph(self):
+        y_factor = self.WIDTH/self.get_max_power()
+        t_factor = self.HEIGHT/self.get_max_time()
+        self.__graph.destroy()
+        self.__graph = customtkinter.CTkCanvas(self, width=self.WIDTH, height=self.HEIGHT)
+        self.__graph.grid(row=0, column=0, sticky="nse")
+        self.draws = []
+        self.y, self.t = self.generate_power_data()
+        last_t = 0
+        for i in range(len(self.y)):
+            self.draws.append(self.__graph.create_line(last_t*t_factor, 0, self.t[i]*t_factor, self.y[i]*y_factor))
+            last_t = self.t[i]
 
 class PannelHeaderGraph(customtkinter.CTkFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -1408,7 +1482,7 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         self.__state_spinbox = Spinbox(self.__step_state_frame,
                                        step_size=1,
                                        min_value=0,
-                                       max_value=len(self.get_app_current_states())-1,
+                                       max_value=len(self.get_app_current_states()),
                                        command=self.step_battery
                                         )
         self.__state_spinbox.grid(row=0, column=0, sticky="w")
@@ -1512,7 +1586,7 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         self.update()
     
     def update_graph(self, *args):
-        pass
+        self.master.update_graph()
 
 class Spinbox(customtkinter.CTkFrame):
     def __init__(self, *args,

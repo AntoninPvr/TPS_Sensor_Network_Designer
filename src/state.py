@@ -61,6 +61,12 @@ class State:
     
     def get_description(self):
         return self.description
+    
+    def get_max_time(self):
+        """
+        Returns the maximum time of the state
+        """
+        return max([elt["element"].get_time(elt["power_state"]) for elt in self.elements])
 
     # Setters
     #===========================================================================
@@ -97,13 +103,11 @@ class State:
         list_power_states = [elt["power_state"] for elt in self.elements]
 
         powers_times = [(elt.get_power(power_state), elt.get_time(power_state)) for elt, power_state in zip(list_elements, list_power_states)]
-        sorted_powers_times = sorted(powers_times, key=lambda x: x[1], reverse=True)
+        sorted_powers_times = sorted(powers_times, key=lambda x: x[1])
         print(powers_times)
         print(sorted_powers_times)
         for i in range(len(sorted_powers_times)):
-            X.append(0)
-            for j in range(len(sorted_powers_times)-i):
-                X[i] += sorted_powers_times[j][0]
+            X.append(sorted_powers_times[i][0])
             T.append(sorted_powers_times[i][1])
         return X, T
 

@@ -123,5 +123,6 @@ class Battery():
         if time is None:
             raise ValueError("Time must be specified")
         
-        self.current_capacity += (power*time)*(self.efficiency/100) + self.input_power*time
+        self.current_capacity -= (power*time)*(100/self.efficiency)
+        self.current_capacity += self.input_power*time
 
