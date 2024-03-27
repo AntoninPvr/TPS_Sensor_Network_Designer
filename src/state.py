@@ -61,12 +61,6 @@ class State:
     
     def get_description(self):
         return self.description
-    
-    def get_power():
-        pass
-
-    def get_time():
-        pass
 
     # Setters
     #===========================================================================
@@ -99,12 +93,18 @@ class State:
         """
         X = []
         T = []
-        sorted_elements = sorted(self.elements, key=lambda x: x["element"].get_time(x["power_state"]))
-        for i in range(len(sorted_elements)):
+        list_elements = [elt["element"] for elt in self.elements]
+        list_power_states = [elt["power_state"] for elt in self.elements]
+
+        powers_times = [(elt.get_power(power_state), elt.get_time(power_state)) for elt, power_state in zip(list_elements, list_power_states)]
+        sorted_powers_times = sorted(powers_times, key=lambda x: x[1], reverse=True)
+        print(powers_times)
+        print(sorted_powers_times)
+        for i in range(len(sorted_powers_times)):
             X.append(0)
-            for j in range(len(sorted_elements)-i):
-                X[i] += sorted_elements[j]["element"].get_power(sorted_elements[j]["power_state"])
-            T.append(sorted_elements[i]["element"].get_time(sorted_elements[i]["power_state"]))
+            for j in range(len(sorted_powers_times)-i):
+                X[i] += sorted_powers_times[j][0]
+            T.append(sorted_powers_times[i][1])
         return X, T
 
     # Save and load

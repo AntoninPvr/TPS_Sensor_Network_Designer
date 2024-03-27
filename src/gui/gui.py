@@ -213,6 +213,9 @@ class AppGUIInterface:
     def add_app_sequence(self, sequence: Sequence):
         self.app.add_sequence(sequence)
 
+    def step_state(self, index: int=0):
+        self.app.step_state(index)
+
 #================================================================================================
 # PannelElement Classes
 #================================================================================================
@@ -1406,6 +1409,7 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
                                        step_size=1,
                                        min_value=0,
                                        max_value=len(self.get_app_current_states())-1,
+                                       command=self.step_battery
                                         )
         self.__state_spinbox.grid(row=0, column=0, sticky="w")
 
@@ -1499,6 +1503,10 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         else:
             self.set_app_battery_current_capacity(0)
 
+    def step_battery(self):
+        self.step_state(int(self.__state_spinbox.get()))
+        self.update()
+
     def fill(self, *args):
         self.set_app_battery_current_capacity(self.get_app_battery_capacity())
         self.update()
@@ -1544,26 +1552,26 @@ class Spinbox(customtkinter.CTkFrame):
     def add_button_callback(self):
         if self.max_value is not None and int(self.entry.get()) + self.step_size > self.max_value:
             return
-        if self.command is not None:
-            self.command()
         try:
             value = int(self.entry.get()) + self.step_size
             self.entry.delete(0, "end")
             self.entry.insert(0, value)
         except ValueError:
             return
+        if self.command is not None:
+            self.command()
 
     def subtract_button_callback(self):
         if self.min_value is not None and int(self.entry.get()) - self.step_size < self.min_value:
             return
-        if self.command is not None:
-            self.command()
         try:
             value = int(self.entry.get()) - self.step_size
             self.entry.delete(0, "end")
             self.entry.insert(0, value)
         except ValueError:
             return
+        if self.command is not None:
+            self.command()
 
     def get(self) -> int:
         try:

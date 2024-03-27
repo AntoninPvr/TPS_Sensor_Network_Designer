@@ -96,6 +96,10 @@ class Battery():
     # Methods
     #================================
     def discharge_until_empty(self, power: float=None, time: float=None):
+        #DEPRECATED
+        """
+        Discharge the battery until it is empty
+        """
         if self.current_capacity <= 0:
             raise ValueError("Battery is already empty")
         if power is None:
@@ -119,6 +123,5 @@ class Battery():
         if time is None:
             raise ValueError("Time must be specified")
         
-        energy = power * time
-        self.current_capacity -= energy
+        self.current_capacity += (power*time)*(self.efficiency/100) + self.input_power*time
 

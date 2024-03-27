@@ -199,11 +199,13 @@ class App:
         if final_state_index >= len(self.current_sequence.states):
             raise IndexError("Index out of range Too high")
         
-        for i in range(1, final_state_index+1):
-            state_powers = self.current_sequence.states[i].get_power()
-            state_times = self.current_sequence.states[i].get_time()
+        for i in range(0, final_state_index+1):
+            state_powers, state_times = self.current_sequence.states[i].generate_power_data()
+            print(f"Power: {state_powers} Time: {state_times}")
             for power, time in zip(state_powers, state_times):
+                print(f"Power: {power} Time: {time}")
                 self.battery.discharge(power, time)
+                print(self.battery.current_capacity)
         self.current_state = final_state_index
 
                     
