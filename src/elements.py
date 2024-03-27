@@ -153,7 +153,7 @@ class Element:
         with open(file_path, "w") as file:
             file.write(json.dumps(self.to_dict(), indent=4))
             
-    def from_dict(dict_element: dict):
+    def from_dict(self, dict_element: dict):
         element = Element()
         element.__from_dict(dict_element)
         return element

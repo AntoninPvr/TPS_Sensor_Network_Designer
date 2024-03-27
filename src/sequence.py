@@ -104,7 +104,7 @@ class Sequence:
         self.description = dict_sequence["description"]
         self.states = [State.from_dict(dict_state, self.dict_elts) for dict_state in dict_sequence["states"]]
 
-    def from_dict(dict_sequence: dict):
+    def from_dict(self, dict_sequence: dict):
         sequence = Sequence()
         sequence.__from_dict(dict_sequence)
         return sequence

@@ -9,3 +9,4 @@ elements_path = data_path + "elements/"
 sequences_path = data_path + "sequences/"
 
 # Files paths
+battery_file = data_path + "battery.json"

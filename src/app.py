@@ -8,6 +8,7 @@ from src.sequence import Sequence
 from src.elements import Element
 from src.power_state import PowerState
 from src.state import State
+from src.battery import Battery
 from src.file_path import *
 import json
 import os
@@ -22,38 +23,51 @@ class App:
         self.loaded_seqs = self.__load_sequences()
         self.dict_seqs = {seq.name: seq for seq in self.loaded_seqs}
         self.current_sequence = self.loaded_seqs[0] if len(self.loaded_seqs) > 0 else None
+        self.battery = self.__load_battery()
 
     # Load and save functions
     #================================
-    def __load_elements(file_path: str = elements_path):
+    def __load_elements(self, file_path: str = elements_path):
         """
         Load elements from a file
         """
         loaded_elts = []
-        for filename in os.listdir(elements_path):
+        for filename in os.listdir(file_path):
             if filename.endswith(".json"):
-                with open(elements_path + filename, "r") as file:
+                with open(file_path + filename, "r") as file:
                     logging.debug(f"Loading element from {filename}")
-                    element = Element.from_dict(json.loads(file))
+                    data = file.read()
+                    element = Element.from_dict(self, json.loads(data))
                     loaded_elts.append(element)
         if len(loaded_elts) == 0:
             logging.info("No element to load")
         return loaded_elts
 
-    def __load_sequences(file_path: str = sequences_path):
+    def __load_sequences(self, file_path: str = sequences_path):
         """
         Load sequences from a file
         """
         loaded_seqs = []
-        for filename in os.listdir(sequences_path):
+        for filename in os.listdir(file_path):
             if filename.endswith(".json"):
-                with open(sequences_path + filename, "r") as file:
+                with open(file_path + filename, "r") as file:
                     logging.debug(f"Loading sequence from {filename}")
-                    sequence = Sequence.from_dict(json.loads(file))
+                    data = file.read()
+                    sequence = Sequence.from_dict(self, json.loads(data))
                     loaded_seqs.append(sequence)
         if len(loaded_seqs) == 0:
             logging.info("No sequence to load")
         return loaded_seqs
+    
+    def __load_battery(self, file_path: str = battery_file):
+        """
+        Load battery from a file
+        """
+        with open(file_path, "r") as file:
+            logging.debug(f"Loading battery from {battery_file}")
+            data = file.read()
+            battery = Battery.from_dict(self, json.loads(data))
+        return battery
     
     def save_elements(self, file_path: str = elements_path):
         """
@@ -68,6 +82,12 @@ class App:
         """
         for sequence in self.loaded_seqs:
             sequence.to_json(file_path)
+    
+    def save_battery(self, file_path: str = battery_file):
+        """
+        Save battery to a file
+        """
+        self.battery.to_json(file_path)
 
     # adding and removing functions
     #================================

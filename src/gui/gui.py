@@ -1146,7 +1146,7 @@ class Graph(customtkinter.CTkFrame, AppGUIInterface):
         # Graph
         #================================
         self.__graph = customtkinter.CTkFrame(self)
-        self.__graph.grid(row=0, column=0, sticky="nsew")
+        self.__graph.grid(row=0, column=0, sticky="nse")
 
         # Add data
         #================================

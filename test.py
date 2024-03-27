@@ -19,6 +19,13 @@ def test_app():
     seq = Sequence(name="Sequence 1", description="Description sequence 1", states=[state1, state2])
     app.add_sequence(seq)
     app.set_current_sequence(seq.get_name())
+    app.battery.set_name("Battery 1")
+    app.battery.set_capacity(1000)
+    app.battery.set_input_power(0)
+    app.battery.set_max_output_power(200)
+    app.battery.set_efficiency(1)
+    app.battery.set_current_capacity(1000)
+    app.save_battery()
     return(app)
 #************************************
 
