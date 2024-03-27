@@ -1398,7 +1398,11 @@ class PannelBattery(customtkinter.CTkFrame, AppGUIInterface):
         self.__step_state_frame.grid(row=8, column=0, columnspan=3, sticky="nswe")
         
         # State spinbox
-        self.__state_spinbox = Spinbox(self.__step_state_frame, step_size=1)
+        self.__state_spinbox = Spinbox(self.__step_state_frame,
+                                       step_size=1,
+                                       min_value=0,
+                                       max_value=len(self.get_app_current_states())-1,
+                                        )
         self.__state_spinbox.grid(row=0, column=0, sticky="w")
 
         #
@@ -1499,10 +1503,15 @@ class Spinbox(customtkinter.CTkFrame):
                  width: int = 100,
                  height: int = 32,
                  step_size: int = 1,
+                 min_value: int = None,
+                 max_value: int = None,
                  command = None,
                  **kwargs
                  ):
         super().__init__(*args, width=width, height=height, **kwargs)
+
+        self.min_value = min_value
+        self.max_value = max_value
 
         self.step_size = step_size
         self.command = command
@@ -1525,6 +1534,8 @@ class Spinbox(customtkinter.CTkFrame):
         self.entry.insert(0, "0")
 
     def add_button_callback(self):
+        if self.max_value is not None and int(self.entry.get()) + self.step_size > self.max_value:
+            return
         if self.command is not None:
             self.command()
         try:
@@ -1535,6 +1546,8 @@ class Spinbox(customtkinter.CTkFrame):
             return
 
     def subtract_button_callback(self):
+        if self.min_value is not None and int(self.entry.get()) - self.step_size < self.min_value:
+            return
         if self.command is not None:
             self.command()
         try:
