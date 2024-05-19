@@ -6,6 +6,7 @@ This file contains the GUI class
 # Built-in
 import logging
 import customtkinter
+import numpy as np
 
 # App logic
 from src.app import App
@@ -46,6 +47,8 @@ POWER_STATE_COLOR = {
     "Fall": IDLE_COLOR,
     "Active": ACTIVE_COLOR
 }
+
+GRAPH_ECH = 1000
 
 # customtkinter appearance
 customtkinter.set_appearance_mode("System")
@@ -1201,14 +1204,14 @@ class PannelGraph(customtkinter.CTkFrame, AppGUIInterface):
 
         # Graph
         #================================
-        self.__graph = GraphWithCanvas(self, app=self.app)
+        self.__graph = GraphWithPlot(self, app=self.app)
         self.__graph.grid(row=1, column=0, sticky="nsew")
     
     # Methods
     #================================
     def update_graph(self):
         self.__graph.destroy()
-        self.__graph = GraphWithCanvas(self, app=self.app)
+        self.__graph = GraphWithPlot(self, app=self.app)
         self.__graph.grid(row=1, column=0, sticky="nsew")
 
 class Graph(customtkinter.CTkFrame, AppGUIInterface):
@@ -1224,9 +1227,9 @@ class Graph(customtkinter.CTkFrame, AppGUIInterface):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Graph
+        # GraphS
         #================================
-        self.__graph = customtkinter.CTkFrame(self)
+        self.__graph = PannelGraph(self, self.app)
         self.__graph.grid(row=0, column=0, sticky="nse")
 
         # Add data
@@ -1270,7 +1273,33 @@ class GraphWithCanvas(customtkinter.CTkFrame, AppGUIInterface):
 
         # Graph
         #================================
-        self.__graph = customtkinter.CTkCanvas(self, width=self.WIDTH, height=self.HEIGHT)
+        self.__graph = GraphWithPlot(self, self.app)
+        self.__graph.grid(row=0, column=0, sticky="nse")
+        
+        # Add data
+        #================================
+
+    # Methods
+    #================================
+
+class GraphWithPlot(customtkinter.CTkFrame, AppGUIInterface):
+    def __init__(self, master, app: App=None):
+        customtkinter.CTkFrame.__init__(self, master)
+        AppGUIInterface.__init__(self, app)
+
+        # Attributes
+        #================================
+        self.WIDTH = 700
+        self.HEIGHT = 500
+
+        # configure windows
+        #================================
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Graph
+        #================================
+        self.__graph = customtkinter.CTkFrame(self)
         self.__graph.grid(row=0, column=0, sticky="nse")
         
         # Add data
@@ -1280,17 +1309,32 @@ class GraphWithCanvas(customtkinter.CTkFrame, AppGUIInterface):
     # Methods
     #================================
     def update_graph(self):
-        y_factor = self.WIDTH/self.get_max_power()
-        t_factor = self.HEIGHT/self.get_max_time()
-        self.__graph.destroy()
-        self.__graph = customtkinter.CTkCanvas(self, width=self.WIDTH, height=self.HEIGHT)
-        self.__graph.grid(row=0, column=0, sticky="nse")
-        self.draws = []
         self.y, self.t = self.generate_power_data()
-        last_t = 0
-        for i in range(len(self.y)):
-            self.draws.append(self.__graph.create_line(last_t*t_factor, 0, self.t[i]*t_factor, self.y[i]*y_factor))
-            last_t = self.t[i]
+        logging.debug(f"y: {self.y}, t: {self.t}")
+        self.max_lenght = self.get_max_time()
+        self.x_disp = np.linspace(0, self.max_lenght, GRAPH_ECH)
+        self.y_disp = []
+        self.__fig = Figure(figsize=(7, 4), dpi=100)
+        self.current_state = 0
+        for x in self.x_disp:
+            logging.debug(f"x: {x}, current_state: {self.current_state}, t: {self.t[self.current_state]}")
+            self.y_disp.append(self.y[self.current_state])
+            if x >= self.t[self.current_state]:
+                if self.current_state < len(self.t)-1:
+                    self.current_state += 1
+        self.__fig = Figure(figsize=(7, 4), dpi=100)
+        self.plot1 = self.__fig.add_subplot(111)
+        self.plot1.plot(self.x_disp, self.y_disp)
+        self.plot1.set_title("Power consumption")
+        self.plot1.set_xlabel("Time (s)")
+        self.plot1.set_ylabel("Power (W)")
+        self.__fig.tight_layout()
+        self.canvas = FigureCanvasTkAgg(self.__fig, master=self.__graph)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack()
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.__graph)
+        self.toolbar.update()
+        self.canvas.get_tk_widget().pack()
 
 class PannelHeaderGraph(customtkinter.CTkFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
