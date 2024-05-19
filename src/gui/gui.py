@@ -4,7 +4,7 @@ This file contains the GUI class
 """
 
 # Built-in
-import logging
+from src.logger import logger
 import customtkinter
 import numpy as np
 
@@ -292,7 +292,7 @@ class PannelHeaderElement(customtkinter.CTkFrame, AppGUIInterface):
     # Methods
     #================================
     def create_element(self):
-        logging.debug("Creating new element")
+        logger.debug("Creating new element")
         WinCreateElement(self, self.app)
 
 class PannelScrollableElement(customtkinter.CTkScrollableFrame, AppGUIInterface):
@@ -368,7 +368,7 @@ class FrameElement(customtkinter.CTkFrame, AppGUIInterface):
         # Delete button
         #================================
         def __delete_item():
-            logging.debug(f"Deleting {self.__element.get_name()}")
+            logger.debug(f"Deleting {self.__element.get_name()}")
             self.destroy()
             self.remove_app_element(self.__element)
             self.__master.update_scrollable_elements()
@@ -543,11 +543,11 @@ class WinCreateElement(customtkinter.CTkToplevel, AppGUIInterface):
     # Methods
     #===========================================================================
     def cancel(self):
-        logging.debug("Canceling element creation")
+        logger.debug("Canceling element creation")
         self.destroy()
 
     def save(self):
-        logging.debug("Saving element")
+        logger.debug("Saving element")
         self.frame_create_element_sub.save()
         if not self.element.get_name() == "":
             self.app.add_element(self.element)
@@ -555,7 +555,7 @@ class WinCreateElement(customtkinter.CTkToplevel, AppGUIInterface):
             self.destroy()
         else:
             self.frame_create_element_sub.name_warning()
-            logging.error("Element name is empty")
+            logger.error("Element name is empty")
 
 class CreateElementSub(customtkinter.CTkFrame):
     def __init__(self, master, element=None, **kwargs):
@@ -620,7 +620,7 @@ class CreateElementSub(customtkinter.CTkFrame):
     # Methods
     #===========================================================================
     def save(self):
-        logging.debug("Saving element")
+        logger.debug("Saving element")
         self.element.set_name(self.name.get())
         self.element.set_description(self.description.get(1.0, "end"))
 
@@ -998,11 +998,11 @@ class WinCreateSequence(customtkinter.CTkToplevel, AppGUIInterface):
     # Methods
     #================================
     def cancel(self):
-        logging.debug("Canceling element creation")
+        logger.debug("Canceling element creation")
         self.destroy()
 
     def save(self):
-        logging.debug("Saving element")
+        logger.debug("Saving element")
         name = self.name.get()
 
         if not name == "":
@@ -1015,10 +1015,10 @@ class WinCreateSequence(customtkinter.CTkToplevel, AppGUIInterface):
             self.master.master.update_scrollable_state()
             self.master.master.master.update_state_spinbox()
             self.destroy()
-            logging.info(f"Sequence {self.sequence.get_name()} created")   
+            logger.info(f"Sequence {self.sequence.get_name()} created")   
         else:
             self.name.configure(fg_color="red")
-            logging.error("Name is empty")
+            logger.error("Name is empty")
 
 class WinCreateState(customtkinter.CTkToplevel, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -1071,11 +1071,11 @@ class WinCreateState(customtkinter.CTkToplevel, AppGUIInterface):
     # Methods
     #===========================================================================
     def cancel(self):
-        logging.debug("Canceling element creation")
+        logger.debug("Canceling element creation")
         self.destroy()
 
     def save(self):
-        logging.debug("Saving element")
+        logger.debug("Saving element")
         name = self.name.get()
 
         if not name == "":
@@ -1088,10 +1088,10 @@ class WinCreateState(customtkinter.CTkToplevel, AppGUIInterface):
             self.master.update_scrollable_state()
             self.destroy()
             self.master.master.master.update_state_spinbox()
-            logging.info(f"State {self.state.get_name()} created")
+            logger.info(f"State {self.state.get_name()} created")
         else:
             self.name.configure(fg_color="red")
-            logging.error("Name is empty")
+            logger.error("Name is empty")
 
 class ElementChoice(customtkinter.CTkScrollableFrame, AppGUIInterface):
     def __init__(self, master, app: App=None):
@@ -1310,15 +1310,14 @@ class GraphWithPlot(customtkinter.CTkFrame, AppGUIInterface):
     #================================
     def update_graph(self):
         self.y, self.t = self.generate_power_data()
-        print(f"y: {self.y}, t: {self.t}")
-        logging.debug(f"y: {self.y}, t: {self.t}")
+        logger.debug(f"y: {self.y}, t: {self.t}")
+        logger.debug(f"y: {self.y}, t: {self.t}")
         self.max_lenght = self.get_max_time()
         self.x_disp = np.linspace(0, self.max_lenght, GRAPH_ECH)
         self.y_disp = []
         self.__fig = Figure(figsize=(7, 4), dpi=100)
         self.current_state = 0
         for x in self.x_disp:
-            logging.debug(f"x: {x}, current_state: {self.current_state}, t: {self.t[self.current_state]}")
             self.y_disp.append(self.y[self.current_state])
             if x >= self.t[self.current_state]:
                 if self.current_state < len(self.t)-1:

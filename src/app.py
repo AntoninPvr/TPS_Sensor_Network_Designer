@@ -3,7 +3,7 @@
 This file contains all application logic
 """
 
-import logging
+from src.logger import logger
 from src.sequence import Sequence
 from src.elements import Element
 from src.power_state import PowerState
@@ -36,12 +36,12 @@ class App:
         for filename in os.listdir(file_path):
             if filename.endswith(".json"):
                 with open(file_path + filename, "r") as file:
-                    logging.debug(f"Loading element from {filename}")
+                    logger.debug(f"Loading element from {filename}")
                     data = file.read()
                     element = Element.from_dict(self, json.loads(data))
                     loaded_elts.append(element)
         if len(loaded_elts) == 0:
-            logging.info("No element to load")
+            logger.info("No element to load")
         return loaded_elts
 
     def __load_sequences(self, file_path: str = sequences_path):
@@ -52,12 +52,12 @@ class App:
         for filename in os.listdir(file_path):
             if filename.endswith(".json"):
                 with open(file_path + filename, "r") as file:
-                    logging.debug(f"Loading sequence from {filename}")
+                    logger.debug(f"Loading sequence from {filename}")
                     data = file.read()
                     sequence = Sequence.from_dict(self, json.loads(data))
                     loaded_seqs.append(sequence)
         if len(loaded_seqs) == 0:
-            logging.info("No sequence to load")
+            logger.info("No sequence to load")
         return loaded_seqs
     
     def __load_battery(self, file_path: str = battery_file):
@@ -65,7 +65,7 @@ class App:
         Load battery from a file
         """
         with open(file_path, "r") as file:
-            logging.debug(f"Loading battery from {battery_file}")
+            logger.debug(f"Loading battery from {battery_file}")
             data = file.read()
             battery = Battery.from_dict(self, json.loads(data))
         return battery
@@ -132,7 +132,7 @@ class App:
         Set the current sequence
         """
         self.current_sequence = self.dict_seqs[sequence_name]
-        logging.info(f"Current sequence set to {sequence_name}")
+        logger.info(f"Current sequence set to {sequence_name}")
 
     # Creaters
     #================================
@@ -208,11 +208,11 @@ class App:
         
         for i in range(0, final_state_index+1):
             state_powers, state_times = self.current_sequence.states[i].generate_power_data()
-            print(f"Power: {state_powers} Time: {state_times}")
+            logger.debug(f"Power: {state_powers} Time: {state_times}")
             for power, time in zip(state_powers, state_times):
-                print(f"Power: {power} Time: {time}")
+                logger.debug(f"Power: {power} Time: {time}")
                 self.battery.discharge(power, time)
-                print(self.battery.current_capacity)
+                logger.debug(self.battery.current_capacity)
         self.current_state = final_state_index
 
                     

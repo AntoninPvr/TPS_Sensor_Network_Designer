@@ -6,7 +6,7 @@ This file contains class to represent a sequence of states
 from src.state import State
 from src.elements import Element
 import json
-import logging
+from src.logger import logger
 
 class Sequence:
     def __init__(self,
@@ -21,7 +21,7 @@ class Sequence:
         self.states = states
         self.elements = None
         self.dict_elts = dict_elts
-        logging.debug(f"Sequence {self.name} created")
+        logger.debug(f"Sequence {self.name} created")
 
     # Getters
     #===========================================================================
@@ -57,23 +57,23 @@ class Sequence:
     #===========================================================================
     def set_name(self, name: str):
         self.name = name
-        logging.info(f"Sequence name set to {name}")
+        logger.info(f"Sequence name set to {name}")
         
     def set_description(self, description: str):
         self.description = description
-        logging.info(f"{self.name}'s description is: {description}")
+        logger.info(f"{self.name}'s description is: {description}")
     
     def add_state(self, state: State):
         self.states.append(state)
-        logging.info(f"State {state.name} added to sequence {self.name}")
+        logger.info(f"State {state.name} added to sequence {self.name}")
     
     def remove_state(self, state: State):
         self.states.remove(state)
-        logging.info(f"State {state.name} removed from sequence {self.name}")
+        logger.info(f"State {state.name} removed from sequence {self.name}")
     
     def set_dict_elts(self, dict_elts: dict):
         self.dict_elts = dict_elts
-        logging.debug(f"Dictionary of elements set for sequence {self.name}")
+        logger.debug(f"Dictionary of elements set for sequence {self.name}")
 
     # Methods
     #===========================================================================

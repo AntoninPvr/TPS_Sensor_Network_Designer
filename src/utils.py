@@ -3,6 +3,7 @@
 This file contains utility functions
 """
 import re
+from src.logger import logger
 
 def s2f(string: str) -> float:
     """
@@ -66,8 +67,8 @@ def cheat_data_for_graph(T, Y):
     Cheat data for graph
     adding fake time and power value to fix the graph
     """
-    print(f"Y: {Y}")
-    print(f"T: {T}")
+    logger.debug(f"Y: {Y}")
+    logger.debug(f"T: {T}")
     newT = [T[0]]
     newY = [Y[0]]
     for i in range(1, len(T)):
@@ -75,7 +76,7 @@ def cheat_data_for_graph(T, Y):
         newY.append(Y[i-1])
         newT.append(T[i])
         newY.append(Y[i])
-    print("===")
-    print(f"Y: {newY}")
-    print(f"T: {newT}")
+    logger.debug("===")
+    logger.debug(f"Y: {newY}")
+    logger.debug(f"T: {newT}")
     return newT, newY

@@ -3,7 +3,7 @@
 This file contains the GUI class
 """
 
-import logging
+from src.logger import logger
 import json
 from src.file_path import *
 
@@ -108,13 +108,13 @@ class Battery():
             raise ValueError("Time must be specified")
         energy = power * time
         if energy > self.current_capacity:
-            logging.info("Battery is fully depleted")
+            logger.info("Battery is fully depleted")
             capacity = self.current_capacity
             self.current_capacity = 0
             return(capacity/power) #Return time when battery is depleted
         else:
             self.current_capacity -= energy
-            logging.info(f"Battery discharged by {energy} J")
+            logger.info(f"Battery discharged by {energy} J")
             return(None)
         
     def discharge(self, power: float=None, time: float=None):

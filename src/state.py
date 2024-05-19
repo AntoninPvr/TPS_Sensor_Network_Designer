@@ -1,6 +1,6 @@
 from src.elements import Element, DummyElement
 import json
-import logging
+from src.logger import logger
 
 """
 State class, that store set of elements and their power state
@@ -72,11 +72,11 @@ class State:
     #===========================================================================
     def set_description(self, description: str = ""):
         self.description = str(description)
-        logging.info(f"{self.name}'s description is: {description}")
+        logger.info(f"{self.name}'s description is: {description}")
     
     def set_name(self, name: str):
         self.name = name
-        logging.info(f"State name set to {name}")
+        logger.info(f"State name set to {name}")
 
     # Methods
     #===========================================================================
@@ -104,8 +104,8 @@ class State:
 
         powers_times = [(elt.get_power(power_state), elt.get_time(power_state)) for elt, power_state in zip(list_elements, list_power_states)]
         sorted_powers_times = sorted(powers_times, key=lambda x: x[1])
-        print(powers_times)
-        print(sorted_powers_times)
+        logger.debug(f"Power and times: {powers_times}")
+        logger.debug(f"Sorted power and times: {sorted_powers_times}")
         for i in range(len(sorted_powers_times)):
             X.append(sorted_powers_times[i][0])
             T.append(sorted_powers_times[i][1])
@@ -129,7 +129,7 @@ class State:
                 new_element = dict_available_elts[elt_name]
             except KeyError:
                 new_element = DummyElement(elt_name)
-                logging.error(f"Element {elt_name} not found, replaced by a dummy element")
+                logger.error(f"Element {elt_name} not found, replaced by a dummy element")
             state.elements.append({"element": new_element, "power_state": elt_name["power_state"]})
     
     def to_json(self, file_path: str):
