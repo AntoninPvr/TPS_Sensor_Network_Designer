@@ -1310,6 +1310,7 @@ class GraphWithPlot(customtkinter.CTkFrame, AppGUIInterface):
     #================================
     def update_graph(self):
         self.y, self.t = self.generate_power_data()
+        print(f"y: {self.y}, t: {self.t}")
         logging.debug(f"y: {self.y}, t: {self.t}")
         self.max_lenght = self.get_max_time()
         self.x_disp = np.linspace(0, self.max_lenght, GRAPH_ECH)
@@ -1322,12 +1323,23 @@ class GraphWithPlot(customtkinter.CTkFrame, AppGUIInterface):
             if x >= self.t[self.current_state]:
                 if self.current_state < len(self.t)-1:
                     self.current_state += 1
+        # Battery plot
+        self.batt_init_cap = self.app.battery.current_capacity
+        self.y_batt = [self.batt_init_cap]
+        for cons in self.y_disp[1:]:
+            if cons >= 0:
+                self.y_batt.append(self.y_batt[-1] - cons*self.max_lenght/GRAPH_ECH)
+            else:
+                self.y_batt.append(self.y_batt[-1])
         self.__fig = Figure(figsize=(7, 4), dpi=100)
         self.plot1 = self.__fig.add_subplot(111)
-        self.plot1.plot(self.x_disp, self.y_disp)
+        self.plot1.plot(self.x_disp, self.y_disp, 'b', label="Consumption")
         self.plot1.set_title("Power consumption")
         self.plot1.set_xlabel("Time (s)")
-        self.plot1.set_ylabel("Power (W)")
+        self.plot1.set_ylabel("Power (W)", color='b')
+        self.plot2 = self.plot1.twinx()
+        self.plot2.plot(self.x_disp, self.y_batt, 'r', label="Battery level")
+        self.plot2.set_ylabel("Battery Capacity (J)", color='r')
         self.__fig.tight_layout()
         self.canvas = FigureCanvasTkAgg(self.__fig, master=self.__graph)
         self.canvas.draw()
